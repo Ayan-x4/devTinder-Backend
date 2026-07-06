@@ -3,47 +3,15 @@ const connectDB = require("./config/database")
 const app = express();
 const User = require("./models/user")
 const {ValidationSignUp} = require("./utils/validation")
-const bcrypt = require("bcrypt") 
+const bcrypt = require("bcrypt")
+const cookieParser = require('cookie-parser')
+const jwt = require("jsonwebtoken")
+const {userAuth} = require("./middlewares/Auth")
 
 
 app.use(express.json());
+app.use(cookieParser());
 
-app.get('/user',async(req,res)=>{
-  const userEmail = req.body.emailId;
-  try{
-    const user = await User.findOne({emailId:userEmail})
-    if(user.length ===0){
-      res.status(404).send("User not found!!!")
-    }else{
-       res.send(user)
-    }
-   
-  }
-  catch(err){
-    res.status(400).send("Somtihing went wrong");
-  }
-  
-})
-
-app.get("/feed",async(req,res)=>{
-  try{
-    const user = await User.find({})
-    res.send(user);
-  }catch(err){
-     res.status(400).send("Somtihing went wrong");
-  }
-})
-
-app.delete("/user",async (req,res)=>{
-  const UserId = req.body.UserId;
-  try{
-     const userId = await User.findByIdAndDelete(UserId);
-     res.send("User deleted Sucessfully")
-  }catch(err){
-    res.status(400).send("Somtihing went wrong");
-  }
-  
-})
 
 
 app.post("/signup",async(req,res)=>{
@@ -77,6 +45,14 @@ app.post("/login",async(req,res)=>{
     }
     const ispasswordValid = await bcrypt.compare(password,user.password)
     if(ispasswordValid){
+
+      const token = await jwt.sign({_id :user._id},"devTinder@098",{
+        expiresIn:"1d",
+
+      })
+
+      res.cookie("token",token,{
+    expires: new Date(Date.now() + 24 * 3600000)})
       res.send("User Login Successfully!!")
     }else{
       throw new Error("Invalid credentials")
@@ -87,29 +63,23 @@ app.post("/login",async(req,res)=>{
   }
 })
 
-app.patch("/user/:userId",async(req,res)=>{
-  const userId = req.params?.userId;
-  const data = req.body;
-
+app.get("/profile",userAuth,async(req,res)=>{
   try{
-    const AllowUpdate = ["photoURL","about","skills","password"]
-    const isUpdateAllowed = Object.keys(data).every(k=>
-      AllowUpdate.includes(k))
-    if(!isUpdateAllowed){
-      throw new Error("Update Not Allowed!!!")
-    }
-    if(data?.skills.length>10){
-      throw new Error("Skill must be less than 10 aur equal to 10")
-    }
-    const user = await User.findByIdAndUpdate({_id : userId},data,{
-      returnDocument:"after",
-      runValidators:true,
-    });
-    res.send("user update sucessfully")
-  }catch(err){
-    res.status(404).send("UPDATE FAILED!"+err.message)
-  }
+
+    const user = req.user;
+  res.send(user)
+}catch(err)
+{
+   res.status(400).send("ERROR: "+ err.message);
+}
 })
+
+app.post("/sendConnectionRequest",userAuth,async(req,res)=>{
+  const user = req.user
+  console.log("sending a connectio request...")
+  res.send(user.firstName+ " sent the connection request")
+})
+
 
 
 
