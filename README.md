@@ -1,4 +1,4 @@
-# 🚀 DevBytes Backend
+# 🚀 DevTinder Backend
 
 <div align="center">
 
