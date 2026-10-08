@@ -65,7 +65,6 @@ This architecture helps in:
 | Mongoose | ODM |
 | JWT | Authentication |
 | bcrypt | Password Hashing |
-| Socket.IO | Real-Time Communication |
 
 ---
 
